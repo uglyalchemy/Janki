@@ -1,0 +1,206 @@
+
+> test
+> node --test tests/scheduler.test.mjs tests/queue.test.mjs
+
+TAP version 13
+# Subtest: new cards/day limit is enforced across the review log
+ok 1 - new cards/day limit is enforced across the review log
+  ---
+  duration_ms: 2.073952
+  type: 'test'
+  ...
+# Subtest: reviews/day limit is enforced separately from new/day
+ok 2 - reviews/day limit is enforced separately from new/day
+  ---
+  duration_ms: 0.288165
+  type: 'test'
+  ...
+# Subtest: pickNext prioritizes due learning cards over reviews and new
+ok 3 - pickNext prioritizes due learning cards over reviews and new
+  ---
+  duration_ms: 0.296855
+  type: 'test'
+  ...
+# Subtest: pickNext skips suspended cards entirely
+ok 4 - pickNext skips suspended cards entirely
+  ---
+  duration_ms: 0.169119
+  type: 'test'
+  ...
+# Subtest: pickNext respects the new/day cap even with cards available
+ok 5 - pickNext respects the new/day cap even with cards available
+  ---
+  duration_ms: 0.295084
+  type: 'test'
+  ...
+# Subtest: pickNext falls back to a learn-ahead card when nothing else is due
+ok 6 - pickNext falls back to a learn-ahead card when nothing else is due
+  ---
+  duration_ms: 0.134391
+  type: 'test'
+  ...
+# Subtest: pickNext does NOT learn-ahead past the configured window
+ok 7 - pickNext does NOT learn-ahead past the configured window
+  ---
+  duration_ms: 0.151708
+  type: 'test'
+  ...
+# Subtest: new and review cards interleave rather than one draining before the other
+ok 8 - new and review cards interleave rather than one draining before the other
+  ---
+  duration_ms: 0.379953
+  type: 'test'
+  ...
+# Subtest: deckHasWork is false for an empty deck and true when a review is due
+ok 9 - deckHasWork is false for an empty deck and true when a review is due
+  ---
+  duration_ms: 0.36483
+  type: 'test'
+  ...
+# Subtest: new Again enters learning at first learning step
+ok 10 - new Again enters learning at first learning step
+  ---
+  duration_ms: 2.442347
+  type: 'test'
+  ...
+# Subtest: new Hard uses the average of the first two steps
+ok 11 - new Hard uses the average of the first two steps
+  ---
+  duration_ms: 0.226022
+  type: 'test'
+  ...
+# Subtest: new Good advances to the second learning step
+ok 12 - new Good advances to the second learning step
+  ---
+  duration_ms: 0.108225
+  type: 'test'
+  ...
+# Subtest: new Good graduates immediately when there is only one learning step
+ok 13 - new Good graduates immediately when there is only one learning step
+  ---
+  duration_ms: 0.198741
+  type: 'test'
+  ...
+# Subtest: new Easy graduates using the easy interval and sets starting ease
+ok 14 - new Easy graduates using the easy interval and sets starting ease
+  ---
+  duration_ms: 0.188624
+  type: 'test'
+  ...
+# Subtest: learning Good on the last step graduates with the graduating interval
+ok 15 - learning Good on the last step graduates with the graduating interval
+  ---
+  duration_ms: 0.121039
+  type: 'test'
+  ...
+# Subtest: review Good multiplies interval by ease
+ok 16 - review Good multiplies interval by ease
+  ---
+  duration_ms: 0.223955
+  type: 'test'
+  ...
+# Subtest: review Hard uses the hard interval factor and softens ease
+ok 17 - review Hard uses the hard interval factor and softens ease
+  ---
+  duration_ms: 0.2099
+  type: 'test'
+  ...
+# Subtest: review Easy applies the easy bonus and raises ease
+ok 18 - review Easy applies the easy bonus and raises ease
+  ---
+  duration_ms: 0.347457
+  type: 'test'
+  ...
+# Subtest: interval ordering: Hard < Good < Easy
+ok 19 - interval ordering: Hard < Good < Easy
+  ---
+  duration_ms: 0.389184
+  type: 'test'
+  ...
+# Subtest: review Again creates a relearning lapse and shrinks the interval
+ok 20 - review Again creates a relearning lapse and shrinks the interval
+  ---
+  duration_ms: 0.21683
+  type: 'test'
+  ...
+# Subtest: newLapseIntervalPercent keeps a fraction of the old interval
+ok 21 - newLapseIntervalPercent keeps a fraction of the old interval
+  ---
+  duration_ms: 0.088045
+  type: 'test'
+  ...
+# Subtest: relearning Good with no more steps returns to review at the lapsed interval
+ok 22 - relearning Good with no more steps returns to review at the lapsed interval
+  ---
+  duration_ms: 0.080462
+  type: 'test'
+  ...
+# Subtest: leech is flagged after reaching the lapse threshold
+ok 23 - leech is flagged after reaching the lapse threshold
+  ---
+  duration_ms: 0.075255
+  type: 'test'
+  ...
+# Subtest: leechAction suspend actually suspends the card
+ok 24 - leechAction suspend actually suspends the card
+  ---
+  duration_ms: 0.067041
+  type: 'test'
+  ...
+# Subtest: ease never drops below 1.3
+ok 25 - ease never drops below 1.3
+  ---
+  duration_ms: 0.061729
+  type: 'test'
+  ...
+# Subtest: maximumInterval caps long intervals
+ok 26 - maximumInterval caps long intervals
+  ---
+  duration_ms: 0.071419
+  type: 'test'
+  ...
+# Subtest: fuzz only applies to intervals of 2+ days and stays within range
+ok 27 - fuzz only applies to intervals of 2+ days and stays within range
+  ---
+  duration_ms: 1.191008
+  type: 'test'
+  ...
+# Subtest: a 1-day interval is never fuzzed
+ok 28 - a 1-day interval is never fuzzed
+  ---
+  duration_ms: 0.158148
+  type: 'test'
+  ...
+# Subtest: cutoffInstant rolls over at the configured UTC hour, not exact 24h
+ok 29 - cutoffInstant rolls over at the configured UTC hour, not exact 24h
+  ---
+  duration_ms: 0.079252
+  type: 'test'
+  ...
+# Subtest: isDue respects suspension
+ok 30 - isDue respects suspension
+  ---
+  duration_ms: 0.084254
+  type: 'test'
+  ...
+# Subtest: previewDelays returns a label for all four ratings without mutating the card
+ok 31 - previewDelays returns a label for all four ratings without mutating the card
+  ---
+  duration_ms: 0.188971
+  type: 'test'
+  ...
+# Subtest: delay formatting
+ok 32 - delay formatting
+  ---
+  duration_ms: 0.057996
+  type: 'test'
+  ...
+1..32
+# tests 32
+# suites 0
+# pass 32
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 143.111337

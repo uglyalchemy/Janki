@@ -1,0 +1,12 @@
+{
+  "name":"Janki — Japanese SRS",
+  "short_name":"Janki",
+  "description":"A Japanese-focused spaced repetition app inspired by Anki's study workflow.",
+  "start_url":"./index.html",
+  "scope":"./",
+  "display":"standalone",
+  "orientation":"portrait",
+  "background_color":"#f5f6f8",
+  "theme_color":"#3f51b5",
+  "icons":[{"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
+}
