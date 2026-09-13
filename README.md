@@ -21,7 +21,7 @@ assets.
 - Keyboard study controls: Space to reveal, 1–4 to grade
 - Statistics and answer distribution
 - JSON export/import with validation and normalization
-- Legacy v3/v4 migration into the v5 collection format
+- Legacy v3/v4 migration into the v6 collection format
 - Offline service worker with stale-cache cleanup and network fallback
 - Responsive iPhone-first layout and safe-area-aware navigation
 
@@ -89,3 +89,19 @@ not modern FSRS. It is not a claim of byte-for-byte parity with Anki. Major
 features outside this scope include FSRS, sync, filtered decks, custom note
 types/templates, parent-deck limit inheritance, image occlusion, and full
 undo history.
+
+
+### Starter Japanese content
+The starter Hiragana deck contains all 46 basic gojuon characters as individual cards. Existing collections are upgraded on load and missing starter cards are added without changing existing review history.
+
+### Audio
+Study cards first use an installed Japanese browser voice. If none is available, the Hear Japanese button falls back to Google Translate TTS so Japanese pronunciation can still be heard. The fallback is only requested when the user presses the audio button.
+
+
+## Built-in Japanese content
+
+- Hiragana: 46 base kana plus dakuten/handakuten and yōon combinations, with useful small kana.
+- Katakana: matching base/voiced/yōon sets plus common foreign-sound combinations such as ファ, ティ, チェ, and ヴァ.
+- Top 1,000 Kanji: ordered by frequency on Lexirise's published Japanese online-materials list. The source includes the repetition mark 々; Janki substitutes the common kanji 叱 so the deck contains 1,000 actual kanji characters. The app enriches each kanji on first reveal using kanjiapi.dev and caches the result locally.
+
+The frequency list is a learning order, not an official JLPT ranking. Frequency varies by corpus; other datasets produce different top-1,000 lists.

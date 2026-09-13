@@ -1,15 +1,1 @@
-Janki verification — 2026-09-12
-
-npm test: PASS
-39 tests passed, 0 failed.
-
-npm run check: PASS
-app.js, scheduler.js, queue.js, and storage.js passed Node syntax checks.
-
-Application smoke check: PASS
-A Node DOM bootstrap harness successfully loaded app.js and completed the initial render without an undefined page-renderer error.
-
-GitHub Pages hardening:
-- Added .nojekyll for a static, non-Jekyll deployment.
-- Updated service-worker cache to v6.
-- Kept all app assets relative to the repository path so project Pages deployments work under /<repository>/.
+Expanded content build: 1000 unique frequency-ranked kanji; comprehensive kana decks; KanjiAPI reveal enrichment; GitHub Pages compatible.

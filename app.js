@@ -83,21 +83,51 @@ function renderStudy(main) {
   const c = deckCounts(db, session.deck);
   const delays = previewDelays(s, db.settings, now());
   const done = session.studied;
-  main.innerHTML = `<section class="study"><div class="studyhead"><span>${esc(session.deck)}</span><span>${done} studied</span></div><div class="progress" aria-label="Session progress"><i style="width:${Math.min(100, Math.max(4, (done / Math.max(1, done + c.newC + c.reviewC + c.learnC)) * 100))}%"></i></div><div class="question"><div class="jp">${esc(n.front)}</div><div class="reading">${esc(n.reading)}</div><button class="audio" id="audio">🔊 Hear Japanese</button><div class="answer" id="answer"><div class="meaning">${esc(n.meaning)}</div><div class="example">${esc(n.sentence)}<br><span class="muted">${esc(n.translation)}</span></div></div><button class="btn primary reveal" id="reveal">Show Answer</button></div><div class="ratings"><button class="rate r0" data-r="0">Again<small>${delays[RATING.AGAIN]}</small></button><button class="rate r1" data-r="1">Hard<small>${delays[RATING.HARD]}</small></button><button class="rate r2" data-r="2">Good<small>${delays[RATING.GOOD]}</small></button><button class="rate r3" data-r="3">Easy<small>${delays[RATING.EASY]}</small></button></div><div class="keyboard-hint muted">Space: reveal · 1–4: answer</div></section>`;
-  $("reveal").onclick = () => revealAnswer();
+  const isKanji = (n.tags || []).includes("kanji-top1000");
+  main.innerHTML = `<section class="study"><div class="studyhead"><span>${esc(session.deck)}</span><span>${done} studied</span></div><div class="progress" aria-label="Session progress"><i style="width:${Math.min(100, Math.max(4, (done / Math.max(1, done + c.newC + c.reviewC + c.learnC)) * 100))}%"></i></div><div class="question"><div class="jp">${esc(n.front)}</div><button class="audio" id="audio" type="button">🔊 Hear Japanese</button><div class="answer" id="answer"><div class="reading" id="answerReading"></div><div class="meaning" id="answerMeaning"></div><div class="example" id="answerExample"></div></div><button class="btn primary reveal" id="reveal" type="button">Show Answer</button></div><div class="ratings" id="ratings" aria-hidden="true"><button class="rate r0" data-r="0" disabled>Again<small>${delays[RATING.AGAIN]}</small></button><button class="rate r1" data-r="1" disabled>Hard<small>${delays[RATING.HARD]}</small></button><button class="rate r2" data-r="2" disabled>Good<small>${delays[RATING.GOOD]}</small></button><button class="rate r3" data-r="3" disabled>Easy<small>${delays[RATING.EASY]}</small></button></div><div class="keyboard-hint muted">Space: reveal · 1–4: answer</div></section>`;
+  $("reveal").onclick = () => revealAnswer(n, isKanji);
   $("audio").onclick = () => speak(n.front);
   main.querySelectorAll("[data-r]").forEach(b => b.onclick = () => grade(Number(b.dataset.r), n));
 }
 
-function revealAnswer() {
+async function revealAnswer(n, isKanji = false) {
   if (answer) return;
   answer = true;
+  const reveal = $("reveal");
+  if (reveal) { reveal.disabled = true; reveal.textContent = isKanji ? "Loading…" : "Show Answer"; }
+  let info = null;
+  if (isKanji && n.front) {
+    try {
+      const cached = n.kanjiInfo;
+      if (cached) info = cached;
+      else {
+        const res = await fetch(`https://kanjiapi.dev/v1/kanji/${encodeURIComponent(n.front)}`, {cache:"force-cache"});
+        if (!res.ok) throw new Error("Kanji lookup failed");
+        info = await res.json();
+        n.kanjiInfo = { meanings: info.meanings || [], on_readings: info.on_readings || [], kun_readings: info.kun_readings || [], stroke_count: info.stroke_count || null, grade: info.grade ?? null, jlpt: info.jlpt ?? null };
+        persist();
+      }
+    } catch {
+      info = n.kanjiInfo || null;
+    }
+  }
+  const reading = info ? [...(info.on_readings || []), ...(info.kun_readings || [])].join(" · ") : n.reading;
+  const meaning = info ? (info.meanings || []).slice(0, 4).join("; ") : n.meaning;
+  const meta = info ? `Rank ${n.meaning.match(/rank (\d+)/)?.[1] || "—"} · ${info.stroke_count || "?"} strokes${info.grade ? ` · Grade ${info.grade}` : ""}${info.jlpt ? ` · JLPT N${info.jlpt}` : ""}` : n.meaning;
+  $("answerReading").textContent = reading || "Reading unavailable";
+  $("answerMeaning").textContent = meaning || "Meaning unavailable";
+  $("answerExample").innerHTML = isKanji ? `<span class="muted">${esc(meta)}</span>` : `${esc(n.sentence)}<br><span class="muted">${esc(n.translation)}</span>`;
   $("answer")?.classList.add("show");
-  if ($("reveal")) $("reveal").style.display = "none";
+  $("reveal")?.remove();
+  const ratings = $("ratings");
+  if (ratings) {
+    ratings.setAttribute("aria-hidden", "false");
+    ratings.querySelectorAll("[data-r]").forEach(b => { b.disabled = false; });
+  }
 }
 
 function grade(r, n) {
-  if (!answer) { revealAnswer(); return; }
+  if (!answer) return;
   const old = cardFor(db, n);
   const fresh = next(old, r, now(), db.settings);
   db.cards[n.id] = fresh;
@@ -109,10 +139,41 @@ function grade(r, n) {
 }
 
 function speak(text) {
-  if (!("speechSynthesis" in window)) { toast("Speech is not available in this browser."); return; }
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = "ja-JP"; u.rate = .85;
-  speechSynthesis.cancel(); speechSynthesis.speak(u);
+  if (!("speechSynthesis" in window) || !("SpeechSynthesisUtterance" in window)) {
+    playOnlineSpeech(text);
+    return;
+  }
+  const speakNow = () => {
+    const voices = speechSynthesis.getVoices();
+    const japanese = voices.find(v => /^ja(?:-|$)/i.test(v.lang)) || voices.find(v => /japanese|日本語/i.test(v.name));
+    if (!japanese) { playOnlineSpeech(text); return; }
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = japanese.lang || "ja-JP";
+    u.voice = japanese;
+    u.rate = 0.82;
+    u.pitch = 1;
+    u.volume = 1;
+    u.onerror = () => playOnlineSpeech(text);
+    speechSynthesis.cancel();
+    speechSynthesis.speak(u);
+  };
+  if (speechSynthesis.getVoices().length) speakNow();
+  else {
+    let done = false;
+    const handler = () => { if (done) return; done = true; speechSynthesis.removeEventListener("voiceschanged", handler); speakNow(); };
+    speechSynthesis.addEventListener("voiceschanged", handler);
+    setTimeout(() => { if (done) return; done = true; speechSynthesis.removeEventListener("voiceschanged", handler); speakNow(); }, 700);
+  }
+}
+
+function playOnlineSpeech(text) {
+  // Explicitly triggered by the user's audio button. This fallback is used only
+  // when the browser has no Japanese voice installed. It keeps the app usable on
+  // browsers such as Opera/Windows where Japanese system voices may be absent.
+  const src = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=ja&q=${encodeURIComponent(text)}`;
+  const audio = new Audio(src);
+  audio.preload = "auto";
+  audio.play().catch(() => toast("Audio could not play. Install a Japanese voice in Windows or allow audio for this site."));
 }
 
 function renderBrowse(main) {
@@ -168,7 +229,7 @@ function renderSettings(main) {
     if (db.settings.maximumInterval < db.settings.minimumInterval) { toast("Maximum interval must be at least the minimum."); return; }
     persist(); toast("Settings saved"); view = "home"; renderMain();
   };
-  $("resetData").onclick = () => { if (confirm("Delete all cards and review history and restore the starter decks?")) { localStorage.removeItem("janki.collection.v5"); db = load(); session = null; view = "home"; renderMain(); toast("Collection reset"); } };
+  $("resetData").onclick = () => { if (confirm("Delete all cards and review history and restore the starter decks?")) { localStorage.removeItem("janki.collection.v6"); db = load(); session = null; view = "home"; renderMain(); toast("Collection reset"); } };
 }
 
 function exportJSON() {
@@ -195,7 +256,7 @@ function todayReviews() { return db.reviews.filter(r => sameDay(r.at)).length; }
 
 window.addEventListener("keydown", e => {
   if (view !== "study" || ["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName)) return;
-  if (e.code === "Space") { e.preventDefault(); revealAnswer(); }
+  if (e.code === "Space") { e.preventDefault(); const n = currentId ? db.notes.find(x => x.id === currentId) : null; if (n) revealAnswer(n, (n.tags || []).includes("kanji-top1000")); }
   if (answer && ["Digit1","Digit2","Digit3","Digit4"].includes(e.code)) {
     e.preventDefault();
     const n = pickNext(db, session.deck, now(), session);
