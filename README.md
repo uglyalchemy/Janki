@@ -65,6 +65,17 @@ python3 -m http.server 8000
 Open `http://localhost:8000`. Service workers require a secure context in
 production (HTTPS; localhost is allowed for development).
 
+## GitHub Pages
+
+Janki is a static app and can be published directly from a GitHub repository.
+Keep `index.html` at the top level of the publishing source and use **main /
+(root)** as the Pages source. GitHub Pages project sites are served under
+`https://<username>.github.io/<repository>/`; all Janki asset paths are
+relative so the app works at that project URL.
+
+A `.nojekyll` file is included so GitHub serves the project as static files
+without trying to process it as a Jekyll site.
+
 ## iPhone
 
 Deploy the folder to an HTTPS host, open it in Safari, then use **Share → Add
